@@ -20,8 +20,6 @@ def drow_the_lines(img, lines):
     img = cv2.addWeighted(img, 0.8, blank_image, 1, 0.0)
     return img
 
-# = cv2.imread('road.jpg')
-#image = cv2.cvtColor(image, cv2.COLOR_BGR2RGB)
 def process(image):
     print(image.shape)
     height = image.shape[0]
