@@ -67,7 +67,7 @@ cv2.destroyAllWindows()
 
 img = Image.fromarray(img)
 foo = img.resize((28,28),Image.ANTIALIAS)
-foo = np.array(foo)
+foo = np.array(foo) / 255.0
 plot_digit(foo)
 
 predicted = np.argmax(model.predict(foo.reshape(1,28,28)))
