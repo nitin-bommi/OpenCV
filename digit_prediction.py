@@ -3,37 +3,42 @@ import numpy as np
 import matplotlib.pyplot as plt
 from PIL import Image
 import tensorflow as tf
+from keras.models import Sequential
+from keras.layers import Conv2D
+from keras.layers import MaxPooling2D
+from keras.layers import Flatten
+from keras.layers import Dense
+from keras.utils import to_categorical
 
 def plot_digit(data):
     image = data.reshape(28, 28)
-    plt.imshow(image, interpolation='nearest')
+    plt.imshow(image, cmap='binary')
     plt.axis('off')
     
 mnist = tf.keras.datasets.mnist
 
-(x_train, y_train), (x_test, y_test) = mnist.load_data()
-x_train, x_test = x_train / 255.0, x_test / 255.0
+(X_train, y_train), (X_test, y_test) = mnist.load_data()
+X_train, X_test = X_train / 255.0, X_test / 255.0
+X_train = X_train.reshape((X_train.shape[0], 28, 28, 1))
+X_test = X_test.reshape((X_test.shape[0], 28, 28, 1))
+y_train = to_categorical(y_train)
+y_test = to_categorical(y_train)
 
-model = tf.keras.models.Sequential([
-  tf.keras.layers.Flatten(input_shape=(28, 28)),
-  tf.keras.layers.Dense(128, activation='relu'),
-  tf.keras.layers.Dropout(0.2),
-  tf.keras.layers.Dense(10)
-])
+model = Sequential()
+model.add(Conv2D(32, (3, 3), activation='relu', kernel_initializer='he_uniform', input_shape=(28, 28, 1)))
+model.add(MaxPooling2D((2, 2)))
+model.add(Flatten())
+model.add(Dense(128, activation='relu', kernel_initializer='he_uniform'))
+model.add(Dense(10, activation='softmax'))
 
-predictions = model(x_train[:1]).numpy()
-tf.nn.softmax(predictions).numpy()
-
-loss_fn = tf.keras.losses.SparseCategoricalCrossentropy(from_logits=True)
-loss_fn(y_train[:1], predictions).numpy()
+model.add(Dense(activation="relu", units=128))
+model.add(Dense(activation="sigmoid", units=10))
 
 model.compile(optimizer='adam',
-              loss=loss_fn,
+              loss='categorical_crossentropy',
               metrics=['accuracy'])
 
-model.fit(x_train, y_train, epochs=10)
-
-model.evaluate(x_test,  y_test, verbose=2)
+model.fit(X_train, y_train, epochs=5)
 
 drawing = False # true if mouse is pressed
 pt1_x , pt1_y = None , None
@@ -48,14 +53,14 @@ def line_drawing(event,x,y,flags,param):
 
     elif event==cv2.EVENT_MOUSEMOVE:
         if drawing==True:
-            cv2.line(img,(pt1_x,pt1_y),(x,y),color=(255,255,255),thickness=3)
+            cv2.line(img,(pt1_x,pt1_y),(x,y),color=(255,255,255),thickness=40)
             pt1_x,pt1_y=x,y
     elif event==cv2.EVENT_LBUTTONUP:
         drawing=False
-        cv2.line(img,(pt1_x,pt1_y),(x,y),color=(255,255,255),thickness=3)        
+        cv2.line(img,(pt1_x,pt1_y),(x,y),color=(255,255,255),thickness=40)        
 
 
-img = np.zeros((200,200), np.uint8)
+img = np.zeros((512,512), np.uint8)
 cv2.namedWindow('test draw')
 cv2.setMouseCallback('test draw',line_drawing)
 
@@ -66,10 +71,10 @@ while(1):
 cv2.destroyAllWindows()
 
 img = Image.fromarray(img)
+plt.imshow(img, cmap='binary')
 foo = img.resize((28,28),Image.ANTIALIAS)
-foo = np.array(foo) / 255.0
-plot_digit(foo)
+foo = np.array(foo)/255.
+plot_digit(foo)            
 
-predicted = np.argmax(model.predict(foo.reshape(1,28,28)))
+np.argmax(model.predict(foo.reshape(1,28,28,1)))
 
-print('Predicted number =',predicted)
