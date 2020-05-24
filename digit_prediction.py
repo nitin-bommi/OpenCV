@@ -2,19 +2,38 @@ import cv2
 import numpy as np 
 import matplotlib.pyplot as plt
 from PIL import Image
-from sklearn.datasets import fetch_openml
-from sklearn.neighbors import KNeighborsClassifier
+import tensorflow as tf
 
 def plot_digit(data):
     image = data.reshape(28, 28)
     plt.imshow(image, interpolation='nearest')
     plt.axis('off')
+    
+mnist = tf.keras.datasets.mnist
 
-dataset = fetch_openml('mnist_784', version=1)
-X, y = dataset['data'], dataset['target'].astype(np.uint8)
+(x_train, y_train), (x_test, y_test) = mnist.load_data()
+x_train, x_test = x_train / 255.0, x_test / 255.0
 
-knn_classifier = KNeighborsClassifier(n_neighbors=5, n_jobs=-1)
-knn_classifier.fit(X, y)
+model = tf.keras.models.Sequential([
+  tf.keras.layers.Flatten(input_shape=(28, 28)),
+  tf.keras.layers.Dense(128, activation='relu'),
+  tf.keras.layers.Dropout(0.2),
+  tf.keras.layers.Dense(10)
+])
+
+predictions = model(x_train[:1]).numpy()
+tf.nn.softmax(predictions).numpy()
+
+loss_fn = tf.keras.losses.SparseCategoricalCrossentropy(from_logits=True)
+loss_fn(y_train[:1], predictions).numpy()
+
+model.compile(optimizer='adam',
+              loss=loss_fn,
+              metrics=['accuracy'])
+
+model.fit(x_train, y_train, epochs=10)
+
+model.evaluate(x_test,  y_test, verbose=2)
 
 drawing = False # true if mouse is pressed
 pt1_x , pt1_y = None , None
@@ -50,6 +69,7 @@ img = Image.fromarray(img)
 foo = img.resize((28,28),Image.ANTIALIAS)
 foo = np.array(foo)
 plot_digit(foo)
-flat = foo.flatten()
-zero = X[0]
-knn_classifier.predict([flat])
+
+predicted = np.argmax(model.predict(foo.reshape(1,28,28)))
+
+print('Predicted number =',predicted)
